@@ -43,10 +43,10 @@ def setup_parser():
 	return parser
 
 def handle_response(client_socket, outdir, prefix, **kwargs):
-	length = struct.unpack('>Q', pycommons.sock_read(client_socket, 8))[0]
+	length = struct.unpack('>Q', common.sock_read(client_socket, 8))[0]
 	logger.info("Response length: %d" % (length))
 
-	msg = pycommons.sock_read(client_socket, length)
+	msg = common.sock_read(client_socket, length)
 
 	response = protocol_pb2.Response()
 	response.ParseFromString(msg)

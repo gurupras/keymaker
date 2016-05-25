@@ -84,9 +84,9 @@ def server(port, secret, out=None):
 	while 1:
 		sock, addr = server_socket.accept()
 #		print str(addr)
-		length = struct.unpack('>Q', pycommons.sock_read(sock, 8))[0]
+		length = struct.unpack('>Q', common.sock_read(sock, 8))[0]
 		logger.info("Request length: %d" % (length))
-		msg_buf = pycommons.sock_read(sock, length)
+		msg_buf = common.sock_read(sock, length)
 		request = protocol_pb2.Request()
 		request.ParseFromString(msg_buf)
 
