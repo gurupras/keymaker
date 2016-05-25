@@ -14,6 +14,7 @@ try:
 		generic_logging.init(level=logging.DEBUG)
 except:
 	print 'No pycommons..continuing anyway'
+	logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__file__)
 
 import common
