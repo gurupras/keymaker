@@ -87,8 +87,6 @@ def client(host, port, secret, command, **kwargs):
 	msg = request.SerializeToString()
 	length = struct.pack('>Q', len(msg))
 	logger.info("Request length: %d" % (len(msg)))
-	import ipdb
-	ipdb.set_trace()
 	client_socket.sendall(length + msg)
 	handle_response(client_socket, **kwargs)
 
