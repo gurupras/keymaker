@@ -48,9 +48,10 @@ def setup_parser():
 
 def handle_response(client_socket, outdir, prefix, **kwargs):
 	length = struct.unpack('>Q', common.sock_read(client_socket, 8))[0]
-	logger.info("Response length: %d" % (length))
+	logger.debug("Response length: %d" % (length))
 
 	msg = common.sock_read(client_socket, length)
+	logger.info("Received response")
 
 	response = protocol_pb2.Response()
 	response.ParseFromString(msg)
@@ -58,6 +59,8 @@ def handle_response(client_socket, outdir, prefix, **kwargs):
 	if response.status != protocol_pb2.OK:
 		logger.error(response.error)
 		return
+	else:
+		logger.debug("OK")
 
 	if response.type == protocol_pb2.Response.KEY_RESPONSE:
 		with open(os.path.join(outdir, prefix), 'wb') as f:
@@ -87,8 +90,9 @@ def client(host, port, secret, command, **kwargs):
 		key_request(request, **kwargs)
 	msg = request.SerializeToString()
 	length = struct.pack('>Q', len(msg))
-	logger.info("Request length: %d" % (len(msg)))
+	logger.debug("Request length: %d" % (len(msg)))
 	client_socket.sendall(length + msg)
+	logger.info("Request sent")
 	handle_response(client_socket, **kwargs)
 
 
