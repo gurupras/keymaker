@@ -1,0 +1,40 @@
+package keymaker;
+
+enum Status {
+	OK = 0;
+	ERROR = 1;
+}
+
+message KeyRequest {
+	required string hostname = 1;
+	required string username = 2;
+	required bool authorizedKeys = 3;
+	optional string keyType = 4;
+}
+message Request {
+	required RequestType type = 1;
+	required string secret = 2;
+	optional KeyRequest keyRequest = 3;
+
+	enum RequestType {
+		KEY_REQUEST = 0;
+	}
+}
+
+message KeyResponse {
+	required string privateKey = 1;
+	required string publicKey = 2;
+}
+
+message Response {
+	required ResponseType type = 1;
+	required Status status = 2;
+	optional string error = 3;
+
+	optional KeyResponse keyResponse = 4;
+
+	enum ResponseType {
+		GENERIC = 0;
+		KEY_RESPONSE = 1;
+	}
+}
