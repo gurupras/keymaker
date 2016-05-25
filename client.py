@@ -6,11 +6,14 @@ import socket
 import subprocess
 import traceback
 
-import pycommons
-from pycommons import generic_logging
 import logging
-if __name__ == '__main__':
-	generic_logging.init(level=logging.DEBUG)
+try:
+	import pycommons
+	from pycommons import generic_logging
+	if __name__ == '__main__':
+		generic_logging.init(level=logging.DEBUG)
+except:
+	print 'No pycommons..continuing anyway'
 logger = logging.getLogger(__file__)
 
 import common
