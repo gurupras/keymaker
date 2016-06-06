@@ -4,6 +4,7 @@ import time
 import struct
 import socket
 import subprocess
+import ssh
 
 import pycommons
 from pycommons import generic_logging
@@ -54,10 +55,10 @@ def handle_key_request(sock, request):
 	send_response(sock, response)
 
 	if request.authorizedKeys is True:
-		authorized_keys_file = os.path.join(os.environ['HOME'], '.ssh', 'authorized_keys')
-		logger.info("Adding to '%s'" % (authorized_keys_file))
-		with open(authorized_keys_file, 'ab') as f:
-			f.write(response.keyResponse.publicKey.strip() + '\n')
+		keys = ssh.get_authorized_keys(key_file='authorized_keys')
+		key = ssh.parse_key(response.keyResponse.publicKey)
+		ssh.update_key(keys, key)
+		ssh.update_authorized_keys(keys, key_file='authorized_keys')
 
 	os.remove(name)
 	os.remove(name+'.pub')
