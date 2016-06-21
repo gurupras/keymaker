@@ -33,20 +33,26 @@ def setup_parser():
 	subparsers = parser.add_subparsers(dest='command')
 
 	key = subparsers.add_parser('key')
-	key.add_argument('--hostname', '-m', default=socket.getfqdn(),
-			help='Use custom hostname in key comment')
-	key.add_argument('--username', '-u', default=os.environ['USER'],
-			help='Use custom username in key comment')
 	key.add_argument('--authorized-keys', '-a', action='store_true',
 			default=False,
 			help='Append key to authorized_keys on keymaker server')
-	key.add_argument('--outdir', '-d',
+
+	key_sp = key.add_subparsers(dest='sub_command')
+	keygen = key_sp.add_parser('gen')
+	keygen.add_argument('--hostname', '-m', default=socket.getfqdn(),
+			help='Use custom hostname in key comment')
+	keygen.add_argument('--username', '-u', default=os.environ['USER'],
+			help='Use custom username in key comment')
+	keygen.add_argument('--outdir', '-d',
 			default=os.path.join(os.environ['HOME'], '.ssh'),
 			help='Output directory')
-	key.add_argument('--prefix', '-p', default='id_rsa', help='Key prefix')
+	keygen.add_argument('--prefix', '-p', default='id_rsa', help='Key prefix')
+
+	key_existing = key_sp.add_parser('existing')
+	key_existing.add_argument('public_key', type=str, help='Existing key')
 	return parser
 
-def handle_response(client_socket, outdir, prefix, **kwargs):
+def handle_response(client_socket, **kwargs):
 	length = struct.unpack('>Q', common.sock_read(client_socket, 8))[0]
 	logger.debug("Response length: %d" % (length))
 
@@ -63,16 +69,32 @@ def handle_response(client_socket, outdir, prefix, **kwargs):
 		logger.debug("OK")
 
 	if response.type == protocol_pb2.Response.KEY_RESPONSE:
-		with open(os.path.join(outdir, prefix), 'wb') as f:
+		with open(os.path.join(kwargs['outdir'], kwargs['prefix']), 'wb') as f:
 			f.write(response.keyResponse.privateKey)
-		with open(os.path.join(outdir, prefix+'.pub'), 'wb') as f:
+		with open(os.path.join(kwargs['outdir'], kwargs['prefix']+'.pub'), 'wb') as f:
 			f.write(response.keyResponse.publicKey)
 
-def key_request(request, username, hostname, authorized_keys, **kwargs):
-		request.type = protocol_pb2.Request.KEY_REQUEST
-		request.keyRequest.hostname = hostname
-		request.keyRequest.username = username
-		request.keyRequest.authorizedKeys = authorized_keys
+def key_request(request, sub_command, authorized_keys, **kwargs):
+	request.keyRequest.authorizedKeys = authorized_keys
+
+	if sub_command == 'gen':
+		key_generate(request, kwargs['username'], kwargs['hostname'])
+	elif sub_command == 'existing':
+		key_existing(request, kwargs['public_key'])
+
+def key_generate(request, username, hostname):
+	request.type = protocol_pb2.Request.KEY_REQUEST
+	request.keyRequest.type = protocol_pb2.KeyRequest.KEY_REQUEST_GENERATE
+	request.keyRequest.generate.hostname = hostname
+	request.keyRequest.generate.username = username
+
+def key_existing(request, public_key):
+	request.type = protocol_pb2.Request.KEY_REQUEST
+	request.keyRequest.type = protocol_pb2.KeyRequest.KEY_REQUEST_EXISTING
+	key = None
+	with open(public_key, 'rb') as f:
+		key = f.read()
+	setattr(request.keyRequest.existing, 'publicKey', key)
 
 def client(host, port, secret, command, **kwargs):
 	try:

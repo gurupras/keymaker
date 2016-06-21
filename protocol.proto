@@ -5,12 +5,29 @@ enum Status {
 	ERROR = 1;
 }
 
+
 message KeyRequest {
-	required string hostname = 1;
-	required string username = 2;
-	required bool authorizedKeys = 3;
-	optional string keyType = 4;
+	required KeyRequestType type = 1;
+	required bool authorizedKeys = 2;
+	optional KeyRequestGenerate generate = 3;
+	optional KeyRequestExisting existing = 4;
+
+	enum KeyRequestType {
+		KEY_REQUEST_GENERATE = 0;
+		KEY_REQUEST_EXISTING = 1;
+	}
+
+	message KeyRequestGenerate {
+		required string hostname = 1;
+		required string username = 2;
+		optional string keyType = 3;
+	}
+
+	message KeyRequestExisting {
+		required string publicKey = 1;
+	}
 }
+
 message Request {
 	required RequestType type = 1;
 	required string secret = 2;

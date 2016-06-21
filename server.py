@@ -33,7 +33,7 @@ def send_response(sock, response):
 	sock.sendall(length + msg)
 
 
-def handle_key_request(sock, request):
+def handle_key_request_generate(sock, request, response):
 	username = request.username.strip()
 	hostname = request.hostname.strip()
 	name = "%s@%s" % (username, hostname)
@@ -43,7 +43,6 @@ def handle_key_request(sock, request):
 		logger.error(stderr)
 		return
 
-	response = protocol_pb2.Response()
 	response.type = protocol_pb2.Response.KEY_RESPONSE
 	response.status = protocol_pb2.OK
 
@@ -52,16 +51,32 @@ def handle_key_request(sock, request):
 	with open(name+'.pub', 'rb') as f:
 		response.keyResponse.publicKey = f.read()
 
-	send_response(sock, response)
-
 	if request.authorizedKeys is True:
-		keys = ssh.get_authorized_keys(key_file='authorized_keys')
-		key = ssh.parse_key(response.keyResponse.publicKey)
-		ssh.update_key(keys, key)
-		ssh.update_authorized_keys(keys, key_file='authorized_keys')
+		logger.info("Adding generated public key to authorized keys")
+		update_authorized_keys(response.keyResponse.publicKey)
 
 	os.remove(name)
 	os.remove(name+'.pub')
+
+def update_authorized_keys(public_key):
+	keys = ssh.get_authorized_keys(key_file='authorized_keys')
+	key = ssh.parse_key(public_key)
+	ssh.update_key(keys, key)
+	ssh.update_authorized_keys(keys, key_file='authorized_keys')
+
+def handle_key_request_existing(sock, request, response):
+	if request.authorizedKeys is True:
+		logger.info("Adding existing public key to authorized keys")
+		update_authorized_keys(request.existing.publicKey)
+	response.type = protocol_pb2.Response.GENERIC
+	response.status = protocol_pb2.OK
+
+def handle_key_request(sock, request, response):
+	logger.info("Handling key request")
+	if request.type == protocol_pb2.KeyRequest.KEY_REQUEST_GENERATE:
+		handle_key_request_existing(sock, request, response)
+	elif request.type == protocol_pb2.KeyRequest.KEY_REQUEST_EXISTING:
+		handle_key_request_existing(sock, request, response)
 
 def server(port, secret, out=None):
 	logger.info("Starting server ...")
@@ -100,8 +115,12 @@ def server(port, secret, out=None):
 			sock.close()
 			continue
 
+		response = protocol_pb2.Response()
+
 		if request.type == protocol_pb2.Request.KEY_REQUEST:
-			handle_key_request(sock, request.keyRequest)
+			handle_key_request(sock, request.keyRequest, response)
+
+		send_response(sock, response)
 		sock.close()
 
 
