@@ -74,7 +74,7 @@ def handle_key_request_existing(sock, request, response):
 def handle_key_request(sock, request, response):
 	logger.info("Handling key request")
 	if request.type == protocol_pb2.KeyRequest.KEY_REQUEST_GENERATE:
-		handle_key_request_existing(sock, request, response)
+		handle_key_request_generate(sock, request, response)
 	elif request.type == protocol_pb2.KeyRequest.KEY_REQUEST_EXISTING:
 		handle_key_request_existing(sock, request, response)
 
